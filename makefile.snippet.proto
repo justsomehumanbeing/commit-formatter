@@ -4,7 +4,7 @@ COMMIT_FMT_SUBMODULE_PATH := __COMMIT_FMT_SUBMODULE_PATH__
 COMMIT_FMT_SUBMODULE_DIR := __COMMIT_FMT_SUBMODULE_DIR__
 
 commit-fmt-bootstrap:
-	@git submodule add <URL-ZUM-COMMIT-FMT-REPO> "$(COMMIT_FMT_SUBMODULE_PATH)" || true
+	@git submodule add __COMMIT_FMT_SUBMODULE_URL__ "$(COMMIT_FMT_SUBMODULE_PATH)" || true
 	@git submodule update --init --recursive
 	@echo ""
 	@echo "commit-fmt added as submodule in $(COMMIT_FMT_SUBMODULE_PATH)"
