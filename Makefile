@@ -35,6 +35,51 @@ install-makefile-snippet: makefile.snippet
 		echo "commit-fmt: unable to determine superproject root from submodule" >&2; \
 		exit 1; \
 	fi; \
+	if rg -F --quiet "commit-fmt: snippet start" "$${super_root}/Makefile"; then \
+		tmp_file="$$(mktemp)"; \
+		if rg -F --quiet "commit-fmt: snippet end" "$${super_root}/Makefile"; then \
+			awk -v snippet_file="$(MAKEFILE_SNIPPET_OUTPUT)" 'BEGIN { \
+					while ((getline line < snippet_file) > 0) { \
+						snippet = snippet line "\n"; \
+					} \
+					close(snippet_file); \
+				} \
+				$$0 == "# commit-fmt: snippet start" { \
+					printf "%s", snippet; \
+					skipping = 1; \
+					next; \
+				} \
+				skipping { \
+					if ($$0 == "# commit-fmt: snippet end") { \
+						skipping = 0; \
+					} \
+					next; \
+				} \
+				{ print }' "$${super_root}/Makefile" > "$${tmp_file}"; \
+		else \
+			awk -v snippet_file="$(MAKEFILE_SNIPPET_OUTPUT)" 'BEGIN { \
+					while ((getline line < snippet_file) > 0) { \
+						snippet = snippet line "\n"; \
+					} \
+					close(snippet_file); \
+				} \
+				$$0 == "# commit-fmt: snippet start" { \
+					printf "%s", snippet; \
+					skipping = 1; \
+					next; \
+				} \
+				skipping { \
+					if ($$0 == "endif") { \
+						skipping = 0; \
+					} \
+					next; \
+				} \
+				{ print }' "$${super_root}/Makefile" > "$${tmp_file}"; \
+		fi; \
+		mv "$${tmp_file}" "$${super_root}/Makefile"; \
+		echo "commit-fmt: snippet refreshed in $${super_root}/Makefile"; \
+		exit 0; \
+	fi; \
 	cat "$(MAKEFILE_SNIPPET_OUTPUT)" >> "$${super_root}/Makefile"
 
 makefile.snippet: $(MAKEFILE_SNIPPET_TEMPLATE)
