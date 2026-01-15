@@ -1,7 +1,33 @@
-.PHONY: install-makefile-snippet
+.PHONY: install-makefile-snippet commit-fmt-script
+
+COMMIT_FMT_SCRIPT_TEMPLATE = commit-fmt.sh.proto
+COMMIT_FMT_SCRIPT_OUTPUT = commit-fmt.sh
 
 MAKEFILE_SNIPPET_TEMPLATE = makefile.snippet.proto
 MAKEFILE_SNIPPET_OUTPUT = makefile.snippet
+
+commit-fmt-script: $(COMMIT_FMT_SCRIPT_OUTPUT)
+
+$(COMMIT_FMT_SCRIPT_OUTPUT): $(COMMIT_FMT_SCRIPT_TEMPLATE)
+	@super_root="$$(git rev-parse --show-superproject-working-tree 2>/dev/null)"; \
+	if [[ -z "$${super_root}" ]]; then \
+		echo "commit-fmt: unable to determine superproject root from submodule" >&2; \
+		exit 1; \
+	fi; \
+	submodule_root="$$(git rev-parse --show-toplevel 2>/dev/null)"; \
+	if [[ -z "$${submodule_root}" ]]; then \
+		echo "commit-fmt: unable to determine submodule root" >&2; \
+		exit 1; \
+	fi; \
+	submodule_path="$$(realpath --relative-to="$${super_root}" "$${submodule_root}")"; \
+	submodule_path="$${submodule_path%/}"; \
+	if [[ -z "$${submodule_path}" || "$${submodule_path}" == "." ]]; then \
+		echo "commit-fmt: unable to determine relative submodule path" >&2; \
+		exit 1; \
+	fi; \
+	sed -e "s#__COMMIT_FMT_SUBMODULE_PATH__#$${submodule_path}#g" \
+		"$(COMMIT_FMT_SCRIPT_TEMPLATE)" > "$(COMMIT_FMT_SCRIPT_OUTPUT)"; \
+	chmod +x "$(COMMIT_FMT_SCRIPT_OUTPUT)"
 
 install-makefile-snippet: makefile.snippet
 	@super_root="$$(git rev-parse --show-superproject-working-tree 2>/dev/null)"; \

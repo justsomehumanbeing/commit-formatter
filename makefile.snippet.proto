@@ -16,6 +16,7 @@ commit-fmt-bootstrap:
 
 commit-fmt-install:
 	@mkdir -p .git/hooks
+	@$(MAKE) -C "$(COMMIT_FMT_SUBMODULE_PATH)" commit-fmt-script
 	@printf '%s\n' '#!/usr/bin/env bash' \
 		'exec "$$PWD/$(COMMIT_FMT_SUBMODULE_PATH)/commit-fmt.sh" "$$@"' \
 		> .git/hooks/prepare-commit-msg
