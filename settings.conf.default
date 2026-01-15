@@ -1,0 +1,39 @@
+# commit-fmt settings (v1)
+# Lines starting with # are comments.
+
+# What to do if the subject line is too long.
+# ignore  -> do nothing
+# warn    -> show warning, continue
+# strict  -> force re-edit
+enforcement = warn
+
+# Allow empty short message or empty sections?
+allow-empty = no
+
+# Allow typing arbitrary text in rofi,
+# or restrict strictly to list entries?
+allow-freetext-rofi = yes
+
+# Require a scope?
+# If yes, NONE is rejected.
+scope-needed = no
+
+# Subject line length limit (prefix + message)
+header-limit = 50
+
+# Extra git info appended as comments at the bottom.
+# Examples:
+#   status
+#   diff
+#   diffstat
+#   diff-all
+#
+# You can use:
+#   comma-separated
+#   space-separated
+#   or bracket style
+#
+# Examples:
+#   git_info = status, diff
+#   git_info = [ status, diffstat ]
+list_of_git_info = [ status, diff ]
