@@ -25,7 +25,7 @@ $(COMMIT_FMT_SCRIPT_OUTPUT): $(COMMIT_FMT_SCRIPT_TEMPLATE)
 		echo "commit-fmt: unable to determine relative submodule path" >&2; \
 		exit 1; \
 	fi; \
-	sed -e "s#__COMMIT_FMT_SUBMODULE_PATH__#$${submodule_path}#g" \
+	sed -e "0,/__COMMIT_FMT_SUBMODULE_PATH__/s#__COMMIT_FMT_SUBMODULE_PATH__#$${submodule_path}#" \
 		"$(COMMIT_FMT_SCRIPT_TEMPLATE)" > "$(COMMIT_FMT_SCRIPT_OUTPUT)"; \
 	chmod +x "$(COMMIT_FMT_SCRIPT_OUTPUT)"
 
