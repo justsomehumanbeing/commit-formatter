@@ -23,6 +23,13 @@
 #   - mktemp, sed, awk, wc, cat
 #   - $EDITOR (falls back to vi)
 #
+# Editor behavior:
+#   - If a TTY is available, launches the configured editor normally.
+#   - If no TTY is available, tries (in order) a GUI editor (settings
+#     `editor-command`, $GIT_EDITOR, $VISUAL, $EDITOR), then a terminal
+#     emulator (${TERMINAL:-xterm} -e <editor>), and finally falls back to
+#     rofi -dmenu for single-line subject/section input.
+#
 
 set -euo pipefail
 
@@ -53,7 +60,7 @@ require_cmd git
 require_cmd rofi
 require_cmd mktemp
 
-EDITOR_BIN="${EDITOR:-vi}"
+EDITOR_CMD=""
 
 # Locate repo root (for project-local config)
 REPO_ROOT=""
@@ -129,12 +136,63 @@ load_settings() {
       scope-needed) SCOPE_NEEDED="${val}" ;;
       header-limit) HEADER_LIMIT="${val}" ;;
       git_info|list_of_git_info) GIT_INFO_RAW="${val}" ;;
+      editor-command) EDITOR_CMD="${val}" ;;
       *) : ;;
     esac
   done < "${SETTINGS_FILE}"
 }
 
 load_settings
+
+pick_editor_cmd() {
+  if [[ -n "${EDITOR_CMD}" ]]; then
+    printf '%s' "${EDITOR_CMD}"
+    return 0
+  fi
+  if [[ -n "${GIT_EDITOR:-}" ]]; then
+    printf '%s' "${GIT_EDITOR}"
+    return 0
+  fi
+  if [[ -n "${VISUAL:-}" ]]; then
+    printf '%s' "${VISUAL}"
+    return 0
+  fi
+  if [[ -n "${EDITOR:-}" ]]; then
+    printf '%s' "${EDITOR}"
+    return 0
+  fi
+  printf '%s' "vi"
+}
+
+has_tty() {
+  [[ -t 0 && -t 1 ]]
+}
+
+is_gui_editor() {
+  local cmd="$1"
+  local bin="${cmd%% *}"
+  bin="${bin##*/}"
+  case "${bin}" in
+    code|code-insiders|codium|gvim|vim-gtk|vim-gnome|gedit|kate|subl|subl3|mate|emacsclient)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+rofi_single_line_capture() {
+  local initial_content="$1"
+  local first_line prompt reply
+  first_line="${initial_content%%$'\n'*}"
+  if [[ "${first_line}" == \#* ]]; then
+    prompt="$(trim "${first_line#\#}")"
+  else
+    prompt="$(trim "${first_line}")"
+  fi
+  prompt="${prompt:-commit message}"
+  reply="$(rofi -dmenu -p "${prompt}")" || return 1
+  printf '%s%s\n' "${initial_content}" "${reply}"
+}
 
 # Normalize a yes/no value
 is_yes() {
@@ -195,12 +253,29 @@ rofi_pick() {
 editor_capture() {
   local initial_content="$1"
   local tmp
+  local editor_cmd
+  local terminal_bin
   tmp="$(mktemp -t commit-fmt.XXXXXX)"
 
   # Ensure file has initial content
   printf '%s' "${initial_content}" > "${tmp}"
 
-  "${EDITOR_BIN}" "${tmp}"
+  editor_cmd="$(pick_editor_cmd)"
+
+  if has_tty; then
+    ${editor_cmd} "${tmp}"
+  else
+    if is_gui_editor "${editor_cmd}"; then
+      ${editor_cmd} "${tmp}"
+    else
+      terminal_bin="${TERMINAL:-xterm}"
+      if command -v "${terminal_bin}" >/dev/null 2>&1; then
+        "${terminal_bin}" -e bash -c "${editor_cmd} \"${tmp}\""
+      else
+        rofi_single_line_capture "${initial_content}" > "${tmp}"
+      fi
+    fi
+  fi
 
   cat "${tmp}"
   rm -f "${tmp}"
