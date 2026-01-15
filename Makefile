@@ -29,6 +29,12 @@ makefile.snippet: $(MAKEFILE_SNIPPET_TEMPLATE)
 		exit 1; \
 	fi; \
 	submodule_dir="$${submodule_path##*/}"; \
+	submodule_url="$$(git -C "$${submodule_root}" remote get-url origin 2>/dev/null)"; \
+	if [[ -z "$${submodule_url}" ]]; then \
+		echo "commit-fmt: unable to determine submodule remote url" >&2; \
+		exit 1; \
+	fi; \
 	sed -e "s#__COMMIT_FMT_SUBMODULE_PATH__#$${submodule_path}#g" \
 		-e "s#__COMMIT_FMT_SUBMODULE_DIR__#$${submodule_dir}#g" \
+		-e "s#__COMMIT_FMT_SUBMODULE_URL__#$${submodule_url}#g" \
 		"$(MAKEFILE_SNIPPET_TEMPLATE)" > "$(MAKEFILE_SNIPPET_OUTPUT)"
