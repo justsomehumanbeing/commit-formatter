@@ -1,6 +1,6 @@
 .PHONY: install-makefile-snippet
 
-MAKEFILE_SNIPPET_TEMPLATE = makefile.snipped
+MAKEFILE_SNIPPET_TEMPLATE = makefile.snippet.proto
 MAKEFILE_SNIPPET_OUTPUT = makefile.snippet
 
 install-makefile-snippet: makefile.snippet
