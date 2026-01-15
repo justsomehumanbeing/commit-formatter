@@ -1,20 +1,23 @@
 .PHONY: commit-fmt-bootstrap commit-fmt-install
 
+COMMIT_FMT_SUBMODULE_PATH := __COMMIT_FMT_SUBMODULE_PATH__
+COMMIT_FMT_SUBMODULE_DIR := __COMMIT_FMT_SUBMODULE_DIR__
+
 commit-fmt-bootstrap:
-	@git submodule add <URL-ZUM-COMMIT-FMT-REPO> .tools/commit-fmt || true
+	@git submodule add <URL-ZUM-COMMIT-FMT-REPO> "$(COMMIT_FMT_SUBMODULE_PATH)" || true
 	@git submodule update --init --recursive
 	@echo ""
-	@echo "commit-fmt added as submodule in .tools/commit-fmt"
+	@echo "commit-fmt added as submodule in $(COMMIT_FMT_SUBMODULE_PATH)"
 	@echo "Update later with:"
 	@echo "  git submodule update --remote --merge"
-	@echo "  git add .tools/commit-fmt .gitmodules"
+	@echo "  git add $(COMMIT_FMT_SUBMODULE_PATH) .gitmodules"
 	@echo "  git commit -m \"chore(tools): bump commit-fmt\""
 	@echo ""
 
 commit-fmt-install:
 	@mkdir -p .git/hooks
 	@printf '%s\n' '#!/usr/bin/env bash' \
-		'exec "$$PWD/.tools/commit-fmt/commit-fmt.sh" "$$@"' \
+		'exec "$$PWD/$(COMMIT_FMT_SUBMODULE_PATH)/commit-fmt.sh" "$$@"' \
 		> .git/hooks/prepare-commit-msg
 	@chmod +x .git/hooks/prepare-commit-msg
-	@echo "✔ commit-fmt hook installed from submodule"
+	@echo "✔ commit-fmt hook installed from submodule $(COMMIT_FMT_SUBMODULE_DIR)"
