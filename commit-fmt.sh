@@ -180,6 +180,32 @@ is_gui_editor() {
   return 1
 }
 
+edit_message_file() {
+  local editor_cmd
+  local terminal_bin
+  editor_cmd="$(pick_editor_cmd)"
+
+  if has_tty; then
+    ${editor_cmd} "${MSG_FILE}"
+  else
+    if is_gui_editor "${editor_cmd}"; then
+      ${editor_cmd} "${MSG_FILE}"
+    else
+      terminal_bin="${TERMINAL:-xterm}"
+      if command -v "${terminal_bin}" >/dev/null 2>&1; then
+        "${terminal_bin}" -e bash -c "${editor_cmd} \"${MSG_FILE}\""
+      else
+        ${editor_cmd} "${MSG_FILE}"
+      fi
+    fi
+  fi
+}
+
+if awk '$0 !~ /^[[:space:]]*#/ && $0 !~ /^[[:space:]]*$/ { found=1; exit } END { exit !found }' "${MSG_FILE}"; then
+  edit_message_file
+  exit 0
+fi
+
 rofi_single_line_capture() {
   local initial_content="$1"
   local first_line prompt reply
