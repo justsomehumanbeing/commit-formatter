@@ -4,8 +4,8 @@
 #
 # Intended usage: Git hook `prepare-commit-msg`.
 #
-# Repo layout (project-local config):
-#   <repo>/.repo-config/commit-fmt/
+# Repo layout (config in submodule):
+#   <repo>/<commit-fmt-submodule>/
 #     actions.list
 #     scopes.list
 #     sections.list
@@ -14,7 +14,7 @@
 # Hook example:
 #   .git/hooks/prepare-commit-msg
 #     #!/usr/bin/env bash
-#     exec "$PWD/.repo-config/commit-fmt/commit-fmt.sh" "$@"
+#     exec "$PWD/<commit-fmt-submodule>/commit-fmt.sh" "$@"
 #
 # Dependencies (kept minimal):
 #   - bash
@@ -71,14 +71,11 @@ else
   exit 2
 fi
 
-CONFIG_DIR="${REPO_ROOT}/.repo-config/commit-fmt"
-USER_FALLBACK_DIR="${HOME}/.repo-config/commit-fmt"
+CONFIG_DIR="${REPO_ROOT}/__COMMIT_FMT_SUBMODULE_PATH__"
 
-if [[ ! -d "${CONFIG_DIR}" ]]; then
-  # Fallback to user config, if present.
-  if [[ -d "${USER_FALLBACK_DIR}" ]]; then
-    CONFIG_DIR="${USER_FALLBACK_DIR}"
-  fi
+if [[ "${CONFIG_DIR}" == *"__COMMIT_FMT_SUBMODULE_PATH__"* ]]; then
+  echo "commit-fmt: config path not configured; run make in the commit-fmt submodule" >&2
+  exit 2
 fi
 
 ACTIONS_FILE="${CONFIG_DIR}/actions.list"
