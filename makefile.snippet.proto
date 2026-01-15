@@ -1,3 +1,6 @@
+ifndef COMMIT_FMT_MAKEFILE_INCLUDED
+COMMIT_FMT_MAKEFILE_INCLUDED := 1
+
 .PHONY: commit-fmt-bootstrap commit-fmt-install
 
 COMMIT_FMT_SUBMODULE_PATH := __COMMIT_FMT_SUBMODULE_PATH__
@@ -22,3 +25,5 @@ commit-fmt-install:
 		> .git/hooks/prepare-commit-msg
 	@chmod +x .git/hooks/prepare-commit-msg
 	@echo "✔ commit-fmt hook installed from submodule $(COMMIT_FMT_SUBMODULE_DIR)"
+
+endif
