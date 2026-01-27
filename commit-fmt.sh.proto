@@ -249,9 +249,11 @@ rofi_pick() {
 # The file is created with initial content.
 editor_capture() {
   local initial_content="$1"
+  local editor_args="${2:-}"
   local tmp
   local editor_cmd
   local terminal_bin
+  local editor_invocation
   tmp="$(mktemp -t commit-fmt.XXXXXX)"
 
   # Ensure file has initial content
@@ -259,15 +261,21 @@ editor_capture() {
 
   editor_cmd="$(pick_editor_cmd)"
 
+  if [[ -n "${editor_args}" ]]; then
+    editor_invocation="${editor_cmd} ${editor_args} \"${tmp}\""
+  else
+    editor_invocation="${editor_cmd} \"${tmp}\""
+  fi
+
   if has_tty; then
-    ${editor_cmd} "${tmp}"
+    ${editor_cmd} ${editor_args} "${tmp}"
   else
     if is_gui_editor "${editor_cmd}"; then
-      ${editor_cmd} "${tmp}"
+      ${editor_cmd} ${editor_args} "${tmp}"
     else
       terminal_bin="${TERMINAL:-xterm}"
       if command -v "${terminal_bin}" >/dev/null 2>&1; then
-        "${terminal_bin}" -e bash -c "${editor_cmd} \"${tmp}\""
+        "${terminal_bin}" -e bash -c "${editor_invocation}"
       else
         rofi_single_line_capture "${initial_content}" > "${tmp}"
       fi
@@ -276,6 +284,22 @@ editor_capture() {
 
   cat "${tmp}"
   rm -f "${tmp}"
+}
+
+editor_limit_args() {
+  local limit="$1"
+  local editor_cmd
+  local bin
+  editor_cmd="$(pick_editor_cmd)"
+  bin="${editor_cmd%% *}"
+  bin="${bin##*/}"
+  case "${bin}" in
+    vim|nvim|vi|gvim|vim-gtk|vim-gnome)
+      if [[ -n "${limit}" ]]; then
+        printf '%s %s' "+setlocal textwidth=${limit}" "+setlocal colorcolumn=+1"
+      fi
+      ;;
+  esac
 }
 
 # Subject length check
@@ -412,12 +436,24 @@ SHORT_MSG=""
 while true; do
   # Provide context in comments, capture first non-comment line.
   # (Users can ignore comments; we only take the first non-comment line.)
+  prefix_len="$(printf '%s' "${INTRO}" | wc -m | awk '{print $1}')"
+  remaining_limit=$(( HEADER_LIMIT - prefix_len ))
+  if (( remaining_limit < 0 )); then
+    remaining_limit=0
+  fi
   initial=$'# Commit subject (one line).\n'
-  initial+="# Prefix: ${INTRO}\n"
-  initial+="# Limit: ${HEADER_LIMIT} characters (prefix + subject).\n"
+  initial+="# Prefix: ${INTRO}"$'\n'
+  initial+="# Limit: ${HEADER_LIMIT} characters (prefix + subject). ${remaining_limit} characters left."$'\n'
+  if (( remaining_limit > 0 )); then
+    initial+="# vim: setlocal textwidth=${remaining_limit} colorcolumn=+1 :"$'\n'
+  fi
   initial+=$'# Write the short message on the next line.\n\n'
 
-  edited="$(editor_capture "${initial}")"
+  editor_args=""
+  if (( remaining_limit > 0 )); then
+    editor_args="$(editor_limit_args "${remaining_limit}")"
+  fi
+  edited="$(editor_capture "${initial}" "${editor_args}")"
 
   # Extract the first non-comment, non-empty line as short message
   SHORT_MSG="$(printf '%s\n' "${edited}" | sed -e 's/\r$//' | awk '
@@ -451,9 +487,9 @@ while IFS= read -r sec || [[ -n "${sec}" ]]; do
   [[ -z "${sec}" ]] && continue
 
   # First line is a comment header (ignored by git), as requested.
-  initial=$"#${sec}\n"
-  initial+="# Write section content below.\n"
-  initial+="# Lines starting with '#' are ignored by git.\n\n"
+  initial="#${sec}"$'\n'
+  initial+="# Write section content below."$'\n'
+  initial+="# Lines starting with '#' are ignored by git."$'\n\n'
 
   edited="$(editor_capture "${initial}")"
 
