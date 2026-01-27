@@ -413,8 +413,8 @@ while true; do
   # Provide context in comments, capture first non-comment line.
   # (Users can ignore comments; we only take the first non-comment line.)
   initial=$'# Commit subject (one line).\n'
-  initial+="# Prefix: ${INTRO}\n"
-  initial+="# Limit: ${HEADER_LIMIT} characters (prefix + subject).\n"
+  initial+="# Prefix: ${INTRO}"$'\n'
+  initial+="# Limit: ${HEADER_LIMIT} characters (prefix + subject)."$'\n'
   initial+=$'# Write the short message on the next line.\n\n'
 
   edited="$(editor_capture "${initial}")"
@@ -451,9 +451,9 @@ while IFS= read -r sec || [[ -n "${sec}" ]]; do
   [[ -z "${sec}" ]] && continue
 
   # First line is a comment header (ignored by git), as requested.
-  initial=$"#${sec}\n"
-  initial+="# Write section content below.\n"
-  initial+="# Lines starting with '#' are ignored by git.\n\n"
+  initial="#${sec}"$'\n'
+  initial+="# Write section content below."$'\n'
+  initial+="# Lines starting with '#' are ignored by git."$'\n\n'
 
   edited="$(editor_capture "${initial}")"
 
